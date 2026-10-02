@@ -85,8 +85,25 @@ dt_status dt_int_mul(long long a, long long b, long long *out)
        dt_int_mul(LLONG_MIN, -1, &out)   -> DT_ERR_OVERFLOW, out untouched
        cases/normal/int_arithmetic.case,
        cases/boundary/int_mul_min_by_negative_one.case */
-    (void)a;
-    (void)b;
-    (void)out;
-    return DT_ERR_OVERFLOW;
+    
+    // edge case: if either a or b is 0, the result is 0
+       if (a == 0 || b == 0) {
+        *out = 0;
+        return DT_OK;
+    }
+
+    // edge case: if either a or b is LLONG_MIN and the other is -1, it will overflow
+    if (a == LLONG_MIN && b == -1) return DT_ERR_OVERFLOW;
+    if (b == LLONG_MIN && a == -1) return DT_ERR_OVERFLOW;
+    
+    if (a > 0){
+        // check for overflow when a is positive by comparing reversed division
+        if (b > 0 && a > LLONG_MAX / b) return DT_ERR_OVERFLOW;
+        if (b < 0 && b < LLONG_MIN / a) return DT_ERR_OVERFLOW;
+    } else {
+        if (b > 0 && a < LLONG_MIN / b) return DT_ERR_OVERFLOW;
+        if (b < 0 && a < LLONG_MAX / b) return DT_ERR_OVERFLOW;
+    }
+    *out = a * b;
+    return DT_OK;
 }
