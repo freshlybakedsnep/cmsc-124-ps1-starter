@@ -63,7 +63,7 @@ dt_status dt_int_sub(long long a, long long b, long long *out)
         return DT_ERR_OVERFLOW;
     }
 
-    if (b > 0 && a > LLONG_MIN + b) {
+    if (b > 0 && a < LLONG_MIN + b) {
         return DT_ERR_OVERFLOW; 
     }
 
