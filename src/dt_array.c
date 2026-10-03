@@ -131,12 +131,9 @@ dt_status dt_array_get(const dt_array *a, long long index, dt_value *out)
        cases/boundary/array_index_below_lower.case,
        cases/boundary/array_full_range_index.case */
 
-    if (index < a->lower_bound) return DT_ERR_RANGE;
-    size_t offset = (size_t)index - (size_t)a->lower_bound;
-    if (offset >= a->length) return DT_ERR_RANGE;
-
-    *out = a->elements[offset];
-
+    size_t off;
+    if (!offset(a, index, &off)) return DT_ERR_RANGE;
+    *out = a->elements[off];
     return DT_OK;
 }
 
@@ -154,10 +151,15 @@ dt_status dt_array_set(dt_array *a, long long index, dt_value v)
          dt_array_set(a,  2, dt_value_int(10))  -> DT_ERR_RANGE, nothing changes
        cases/normal/array_basics.case, cases/boundary/array_negative_lower_bound.case */
 
-    if (index < a->lower_bound) return DT_ERR_RANGE;
-    size_t offset = (size_t)index - (size_t)a->lower_bound;
-    if (offset >= a->length) return DT_ERR_RANGE;
-    
-    a->elements[offset] = v;
+    size_t off;
+    if (!offset(a, index, &off)) return DT_ERR_RANGE;
+    a->elements[off] = v;
     return DT_OK;
+}
+
+static bool offset(dt_array *a, long long index, size_t *out_offset) {
+    if (index < a->lower_bound) return false;
+    if (sizeof(index) - sizeof(a->lower_bound) >= a->length) return false;
+    *out_offset = (size_t)index - (size_t)a->lower_bound;
+    return true;
 }
