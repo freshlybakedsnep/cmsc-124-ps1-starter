@@ -44,6 +44,13 @@ dt_array *dt_array_new(size_t length, long long lower_bound)
        cases/normal/array_basics.case, cases/boundary/array_empty.case,
        cases/boundary/array_negative_lower_bound.case */
 
+    // check for invalid size or index range
+    if (length > SIZE_MAX / sizeof(dt_value)) return NULL;  
+
+    // check for unrepresentable final index
+    if (length > 0 && lower_bound > LLONG_MAX - (long long)length + 1) return NULL;
+
+    // allocate memory for the dt_array structure
     dt_array *new_array = malloc(sizeof(dt_array));
     if (new_array == NULL) return NULL;     // check for allocation failure
 
