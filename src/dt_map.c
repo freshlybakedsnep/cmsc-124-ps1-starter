@@ -23,24 +23,25 @@
 typedef struct dt_map_entry dt_map_entry;
 
 struct dt_map {
-    int placeholder; /* TODO: Add the buckets and insertion-order data. */
+    // we have 5 fields
 
     // both dt_map_entry arrays points to the same dt_map_entry struct...
     // what is inside of those arrays are different
-
-    // contains the n elements of slots and 
+    // contains the n elements of slots and we will have 10 slots
     dt_map_entry  **buckets;
-    size_t num_entries; // for the dt_map_len
-    size_t num_buckets; 
-
+    size_t num_buckets; // the number of slots
+    size_t num_entries; // the number of keys in the entire map
+     
     
     // an array of pointers that points to the same dt_map_entry...
     // inside of the array are the dt_map_entry structs from the first one inserted...
     // until the last one that was inserted
-    dt_map_entry **order; 
+    dt_map_entry **order;
+    size_t order_cap; //capacity of order,
 
 };
 
+// this is a linked list
 struct dt_map_entry {
     char *key;   
     dt_value value;
@@ -55,7 +56,36 @@ dt_map *dt_map_new(void)
     /* TODO: Return an allocated empty map. Return NULL after an allocation failure.
        dt_map_new()  -> a map whose dt_map_len is 0
        cases/normal/map_basics.case */
-    return NULL;
+    
+
+    // allocate the new map and each of the slots
+    dt_map  *new_map = malloc(sizeof(dt_map));
+    if ( new_map == NULL){
+        return NULL;
+    };
+    new_map->buckets = malloc (10 * sizeof(dt_map_entry *));
+    if ( new_map->buckets == NULL){
+        free (new_map);
+        return NULL;
+    };
+
+    new_map->order = malloc (10 * sizeof(dt_map_entry *));
+    if ( new_map->order == NULL){
+        free (new_map);
+        return NULL;
+    };
+
+
+    // initialize the contents inside the bucket array in the map to null values
+    for (size_t i = 0; i < 10; i++) new_map->buckets[i] = NULL;
+    for (size_t i = 0; i < 10; i++) new_map->order[i] = NULL;
+
+    //initialize the other fields
+    new_map->num_buckets = 10; // number of slots 
+    new_map->num_entries = 0; // number of keys
+
+    new_map->order_cap  = 10; // number of keys we can create, can be increased or not
+    return new_map;
 }
 
 /*
@@ -70,6 +100,10 @@ void dt_map_free(dt_map *m)
        dt_map_free(NULL)             -> returns, having done nothing
        cases/cleanup/map_churn.case */
     (void)m;
+
+    //clear the slots first
+    for (size_t i = 0; i < )
+    m->dt_map_entry
 }
 
 /*
@@ -83,8 +117,7 @@ size_t dt_map_len(const dt_map *m)
        after put beta again:          dt_map_len(m) -> 3, still
        after del alpha:               dt_map_len(m) -> 2
        cases/normal/map_basics.case */
-    (void)m;
-    return 0;
+    return m->num_entries;
 }
 
 /*
@@ -163,4 +196,48 @@ dt_status dt_map_key_at(const dt_map *m, size_t index, const char **out)
     (void)index;
     (void)out;
     return DT_ERR_RANGE;
+}
+
+
+
+
+// HELPER FUNCTIONS
+static dt_map_entry *find_entry(const dt_map *m, const char *key) {
+    //init
+    dt_map_entry *current;
+    dt_map_entry *next;
+    
+    // bucket = hash_key(key) % m->num_buckets
+    size_t index = hash_key(key) % m->num_buckets;
+
+    // walk the chain with dt_map_entry->next, compare with strcmp
+    current = m->buckets[index];
+    while (current != NULL && (strcmp(current->key, key) != 0)) {
+        //traverse through the linked list
+        current = current->next;
+        
+    };
+    
+    if (current == NULL ){
+        return NULL;
+    };
+    // return the entry or NULL
+    if (strcmp(current->key, key) == 0) {
+        return current;
+    };
+
+}
+
+
+static unsigned long long hash_key(const char *key)
+{
+    unsigned long long h = 14695981039346656037ULL;
+    for (const unsigned char *p = (const unsigned char *)key; *p; p++) {
+        // XOR
+        h ^= *p;
+
+        // multiply h to 1099511628211ULL
+        h *= 1099511628211ULL;
+    }
+    return h; 
 }
