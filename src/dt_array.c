@@ -26,6 +26,9 @@ struct dt_array {
     long long lower_bound;
 };
 
+// helper method declaration
+static bool offset(const dt_array *a, long long index, size_t *out_offset);
+
 /*
  * dt_array_new builds an array of length nil elements.
  * The first index is lower_bound. A zero length creates a valid empty array.
@@ -54,10 +57,7 @@ dt_array *dt_array_new(size_t length, long long lower_bound)
     dt_array *new_array = malloc(sizeof(dt_array));
     if (new_array == NULL) return NULL;     // check for allocation failure
 
-    // assign set values to generated array struct
-    new_array->lower_bound = lower_bound;
-    new_array->length = length;
-
+    
     // allocate memory for the elements of the array
     new_array->elements = malloc(length * sizeof(dt_value));
     if (new_array->elements == NULL) {      // check for allocation failure
@@ -65,6 +65,10 @@ dt_array *dt_array_new(size_t length, long long lower_bound)
         return NULL;
     }
 
+    // initalize the fields of the dt_array structure
+    new_array->lower_bound = lower_bound;
+    new_array->length = length;
+    
     // initialize each element to dt_value_nil()
     for (size_t i = 0; i < length; i++) new_array->elements[i] = dt_value_nil();
     return new_array;
@@ -140,6 +144,7 @@ dt_status dt_array_get(const dt_array *a, long long index, dt_value *out)
 
     size_t off;
     if (!offset(a, index, &off)) return DT_ERR_RANGE;
+    // write the value at the calculated offset to *out
     *out = a->elements[off];
     return DT_OK;
 }
@@ -160,13 +165,21 @@ dt_status dt_array_set(dt_array *a, long long index, dt_value v)
 
     size_t off;
     if (!offset(a, index, &off)) return DT_ERR_RANGE;
+    // write value to the element at the calculated offset
     a->elements[off] = v;
     return DT_OK;
 }
 
-static bool offset(dt_array *a, long long index, size_t *out_offset) {
+static bool offset(const dt_array *a, long long index, size_t *out_offset) {
+
+    // check if the index is below the lower bound
     if (index < a->lower_bound) return false;
-    if (sizeof(index) - sizeof(a->lower_bound) >= a->length) return false;
-    *out_offset = (size_t)index - (size_t)a->lower_bound;
+
+    // calculate the distance and check if it exceeds the length
+    size_t distance = (size_t)index - (size_t)a->lower_bound;
+    if (distance >= a->length) return false;
+
+    // write the distance to the output parameter and return true
+    *out_offset = distance;
     return true;
 }
