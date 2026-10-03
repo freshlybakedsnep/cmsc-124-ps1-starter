@@ -36,9 +36,30 @@ dt_record *dt_record_new(const char **field_names, size_t field_count)
        nine fields                  -> NULL, and the driver reports DT_ERR_CAPACITY
        cases/normal/record_basics.case, cases/capacity/record_max_fields.case,
        cases/capacity/record_over_fields.case */
-    (void)field_names;
-    (void)field_count;
-    return NULL;
+    if (field_count > DT_RECORD_MAX_FIELDS) return NULL;
+    
+    // memory allocation for the dt_record structure
+    dt_record *r = malloc(sizeof(dt_record));
+    if (r == NULL) return NULL;
+
+    // copy each field name and set each field to dt_value_nil()
+    for (size_t i=0; i<field_count; i++) {
+
+        // allocate memory for the field name copy
+        r->names[i] = malloc(strlen(field_names[i]) + 1);
+        if (r->names[i] == NULL) {          // allocation failure, free previously allocated names and the record
+            for (size_t j=0; j<i; j++) {
+                free(r->names[j]);
+            }
+            free(r);
+            return NULL;
+        }
+        // initialize the field name and set the corresponding value to nil
+        strcpy(r->names[i], field_names[i]);
+        r->values[i] = dt_value_nil();
+    }
+    r->count = field_count;
+    return r;
 }
 
 /*
@@ -50,7 +71,14 @@ void dt_record_free(dt_record *r)
     /* TODO: Release the copied field names. Then release the record.
        a record holding a string value  -> the names go, the string stays
        dt_record_free(NULL)             -> returns, having done nothing */
-    (void)r;
+    
+
+    // skip if r is NULL, otherwise free each field name and the record
+    if (r == NULL) return;
+    for (size_t i=0; i<r->count; i++) {
+        free(r->names[i]);
+    }
+    free(r);
 }
 
 /*
@@ -62,8 +90,9 @@ size_t dt_record_field_count(const dt_record *r)
        The count does not change after construction.
        after `rec new person name age`:  dt_record_field_count(person) -> 2
        cases/normal/record_basics.case */
-    (void)r;
-    return 0;
+    
+    // simply return the count field of the dt_record struct
+    return r->count;
 }
 
 /*
@@ -79,10 +108,11 @@ dt_status dt_record_field_name(const dt_record *r, size_t index, const char **ou
          dt_record_field_name(person, 0, &out)  -> DT_OK, *out = "name"
          dt_record_field_name(person, 2, &out)  -> DT_ERR_RANGE, *out untouched
        cases/normal/record_basics.case */
-    (void)r;
-    (void)index;
-    (void)out;
-    return DT_ERR_RANGE;
+    
+    // check for invalid index range
+    if (index >= r->count) return DT_ERR_RANGE;
+    *out = r->names[index];     // write the field name at the specified index to *out
+    return DT_OK;
 }
 
 /*
@@ -96,9 +126,14 @@ dt_status dt_record_get(const dt_record *r, const char *field, dt_value *out)
          dt_record_get(person, "age", &out)      -> DT_OK, *out is the integer 36
          dt_record_get(person, "salary", &out)   -> DT_ERR_FIELD, *out untouched
        cases/normal/record_basics.case, cases/boundary/record_unknown_field.case */
-    (void)r;
-    (void)field;
-    (void)out;
+
+    // iterate through the field names to find the matching field
+    for (size_t i=0; i<r->count; i++) {
+        if (strcmp(r->names[i], field) == 0) {  // field found, write the corresponding value to *out
+            *out = r->values[i];
+            return DT_OK;
+        }
+    }
     return DT_ERR_FIELD;
 }
 
@@ -115,8 +150,13 @@ dt_status dt_record_set(dt_record *r, const char *field, dt_value v)
          dt_record_set(person, "salary", dt_value_int(1))   -> DT_ERR_FIELD
          the record still has only the fields "name" and "age"
        cases/normal/record_basics.case, cases/boundary/record_unknown_field.case */
-    (void)r;
-    (void)field;
-    (void)v;
+    
+    // iterate through the field names to find the matching field and set its value
+    for (size_t i=0; i<r->count; i++) {
+        if (strcmp(r->names[i], field) == 0) {  // field found, set the corresponding value to v
+            r->values[i] = v;
+            return DT_OK;
+        }
+    }
     return DT_ERR_FIELD;
 }
