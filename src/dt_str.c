@@ -43,7 +43,13 @@ dt_str *dt_str_new(const char *bytes, size_t length)
 
     // allocate memory for the dt_str structure and the string buffer
     dt_str *new_str = malloc(sizeof(dt_str));
+    if (new_str == NULL) return NULL;       // check for allocation failure
+
     new_str->bytes = malloc(length + 1);
+    if (new_str->bytes == NULL) {           // check for allocation failure
+        free(new_str);                      // free the previously allocated dt_str
+        return NULL;
+    }
 
     // copy the bytes into the buffer and add a null terminator
     memcpy(new_str->bytes, bytes, length);
@@ -53,6 +59,7 @@ dt_str *dt_str_new(const char *bytes, size_t length)
     new_str->length = length;
     new_str->capacity = length + 1;
 
+    // return the newly created dt_str struct
     return new_str;
 }
 
@@ -64,6 +71,8 @@ void dt_str_free(dt_str *s)
     /* TODO: Release the buffer. Then release the handle. Accept NULL.
        dt_str_free(s)     -> the buffer and the handle are both released
        dt_str_free(NULL)  -> returns, having done nothing */
+
+    // skips if s is NULL, otherwise free the buffer and the struct
     if (s == NULL) return;
     free(s->bytes);
     free(s);
@@ -78,6 +87,8 @@ size_t dt_str_len(const dt_str *s)
        after `str new greeting "hello"` then `str append greeting ", world"`:
          dt_str_len(greeting) -> 12
        cases/normal/string_building.case */
+    
+    // simply return the length field of the dt_str struct
     return s->length;
 }
 
@@ -92,6 +103,8 @@ const char *dt_str_bytes(const dt_str *s)
          dt_str_bytes(s) -> the three bytes 'a', 0, 'b'
          dt_str_len(s)   -> 3, the required read length
        cases/capacity/embedded_zero_byte.case */
+    
+    // simply return the bytes field of the dt_str struct
     return s->bytes;
 }
 
@@ -120,7 +133,7 @@ dt_status dt_str_append(dt_str *s, const char *bytes, size_t length)
         }
 
         char *new_bytes = realloc(s->bytes, new_capacity);
-        if (new_bytes == NULL) return DT_ERR_CAPACITY;
+        if (new_bytes == NULL) return DT_ERR_CAPACITY;      // check for allocation failure
         s->bytes = new_bytes;
         s->capacity = new_capacity;
     }
@@ -149,9 +162,12 @@ dt_status dt_str_substr(const dt_str *s, size_t start, size_t length, dt_str **o
          dt_str_substr(s, 3, 5, &out)  -> DT_ERR_RANGE, *out untouched
        an allocation failure           -> DT_ERR_CAPACITY, *out untouched
        cases/boundary/substr_exact_end.case, cases/boundary/substr_past_end.case */
-    if (start >= s->length) return DT_ERR_RANGE;
+    
+    // check if the requested range exceeds the source string
+    if (start > s->length) return DT_ERR_RANGE;
     if (length > s->length - start) return DT_ERR_RANGE;
 
+    // create a new dt_str for the substring and return it through *out
     dt_str *substr = dt_str_new(s->bytes + start, length);
     *out = substr;
     return DT_OK;
