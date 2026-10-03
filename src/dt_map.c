@@ -20,8 +20,31 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef struct dt_map_entry dt_map_entry;
+
 struct dt_map {
     int placeholder; /* TODO: Add the buckets and insertion-order data. */
+
+    // both dt_map_entry arrays points to the same dt_map_entry struct...
+    // what is inside of those arrays are different
+
+    // contains the n elements of slots and 
+    dt_map_entry  **buckets;
+    size_t num_entries; // for the dt_map_len
+    size_t num_buckets; 
+
+    
+    // an array of pointers that points to the same dt_map_entry...
+    // inside of the array are the dt_map_entry structs from the first one inserted...
+    // until the last one that was inserted
+    dt_map_entry **order; 
+
+};
+
+struct dt_map_entry {
+    char *key;   
+    dt_value value;
+    dt_map_entry *next;
 };
 
 /*
