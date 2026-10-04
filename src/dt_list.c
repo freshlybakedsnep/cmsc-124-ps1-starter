@@ -54,11 +54,16 @@ dt_list *dt_list_cons(dt_value head, dt_list *tail)
        List b contains (2 3) and references the same cells for 2 and 3.
        an allocation failure -> NULL
        cases/normal/list_basics.case, cases/cleanup/shared_list_tail.case */
-    (void)head;
-    (void)tail;
-    return NULL;
-}
+    
+    dt_list *new_list = malloc(sizeof(dt_list));
+    if (new_list == NULL){
+        return NULL;
+    };
 
+    new_list->head = head;
+    new_list->tail = tail;
+    return new_list;
+}    
 /*
  * dt_list_free releases one cell and preserves its tail.
  * Another list can still reference the tail. The function accepts NULL.
@@ -69,7 +74,7 @@ void dt_list_free(dt_list *l)
        freeing a's first cell  -> b still reaches the cells holding 2 and 3
        releasing the tail here causes the sanitizer to report a double release
        cases/cleanup/shared_list_tail.case */
-    (void)l;
+    free(l);
 }
 
 /*
@@ -81,7 +86,18 @@ size_t dt_list_len(const dt_list *l)
        for a = (1 2 3):  dt_list_len(a) -> 3
        for the empty list: dt_list_len(NULL) -> 0
        cases/normal/list_basics.case */
-    (void)l;
+    size_t len = 0;
+    const dt_list *current;
+
+    if(l != NULL) {
+        current = l;
+        while (current != NULL) {
+            len += 1;
+            current = current->tail;
+
+        };
+        return len;
+    };
     return 0;
 }
 
@@ -96,11 +112,14 @@ dt_status dt_list_car(const dt_list *l, dt_value *out)
        Preserve *out after this error. A nil value is a valid cell value.
        for a = (1 2 3):     dt_list_car(a, &out)    -> DT_OK, *out is 1
        for the empty list:  dt_list_car(NULL, &out) -> DT_ERR_EMPTY, *out untouched
-       cases/normal/list_basics.case, cases/boundary/list_car_empty.case */
-    (void)l;
-    (void)out;
-    return DT_ERR_EMPTY;
-}
+       cases/normal/list_basics.case, cases/boundary/list_car_empty.case */ 
+    if (l == NULL) {
+        return DT_ERR_EMPTY;
+    };
+
+    *out = l->head;
+    return DT_OK;
+  }
 
 /*
  * dt_list_cdr writes the tail to *out. It returns DT_ERR_EMPTY for an empty
@@ -113,7 +132,11 @@ dt_status dt_list_cdr(const dt_list *l, dt_list **out)
        for a = (1 2 3):     dt_list_cdr(a, &out)    -> DT_OK, *out references tail b
        for the empty list:  dt_list_cdr(NULL, &out) -> DT_ERR_EMPTY, *out untouched
        cases/normal/list_basics.case, cases/boundary/list_cdr_empty.case */
-    (void)l;
-    (void)out;
-    return DT_ERR_EMPTY;
+    if (l == NULL) {
+        return DT_ERR_EMPTY;
+    };
+
+    *out = l->tail;
+    return DT_OK;
+
 }
