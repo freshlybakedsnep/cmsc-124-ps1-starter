@@ -48,6 +48,11 @@ struct dt_map_entry {
     dt_map_entry *next;
 };
 
+//prototype functions
+static unsigned long long hash_key(const char *key);
+static dt_map_entry *find_entry(const dt_map *m, const char *key);
+/*static dt_map_entry *find_entry_order(const dt_map *m, const char *key);*/
+
 /*
  * dt_map_new builds an empty map. It returns NULL after an allocation failure.
  */
@@ -102,8 +107,15 @@ void dt_map_free(dt_map *m)
     (void)m;
 
     //clear the slots first
-    for (size_t i = 0; i < )
-    m->dt_map_entry
+    for (size_t i = 0; i < m->num_buckets; i++) {
+        free(m->order[i]->key);
+        free(m->order[i]);
+
+    };
+    free(m->order);
+    free(m->buckets);
+    free(m);
+    
 }
 
 /*
@@ -136,10 +148,69 @@ dt_status dt_map_put(dt_map *m, const char *key, dt_value v)
        put "beta" -> 22 on that map       -> DT_OK, same position, new value
        an allocation failure              -> DT_ERR_CAPACITY, map unchanged
        cases/normal/map_basics.case */
-    (void)m;
-    (void)key;
-    (void)v;
-    return DT_ERR_CAPACITY;
+    
+    
+    dt_map_entry *current;
+    dt_map_entry *new_entry;
+    dt_map_entry **new_order;
+
+    
+
+    
+    current = find_entry(m, key);
+
+    // edit the current entry
+    if (current != NULL) {
+        current->value = v;
+        return DT_OK;
+    }
+
+    
+    // allocate first the new entry
+    //check if allocation failed
+    new_entry = malloc(sizeof(dt_map_entry));
+    if (new_entry == NULL) {
+        return DT_ERR_CAPACITY;
+    };
+
+    // allocate new key
+    size_t len = strlen(key) + 1;
+    new_entry->key = malloc(len);
+    if (new_entry->key == NULL) {
+        free(new_entry);
+        return DT_ERR_CAPACITY;
+    }
+
+    memcpy(new_entry->key, key, len);
+    new_entry->value = v;
+
+    // grow the order array if it is full (temp pointer so the old array isn't lost on failure)
+    if (m->num_entries == m->order_cap) {
+        size_t new_cap = m->order_cap * 2;
+        new_order = realloc(m->order, new_cap * sizeof(dt_map_entry *));
+        if (new_order == NULL) {
+            free(new_entry->key);
+            free(new_entry);
+            return DT_ERR_CAPACITY;
+        }
+        m->order = new_order;
+        m->order_cap = new_cap;
+    }
+
+    // every allocation succeeded, so now edit the map
+    // link the new entry at the head of its bucket chain
+    size_t index = hash_key(key) % m->num_buckets;
+    new_entry->next = m->buckets[index];
+    m->buckets[index] = new_entry;
+    
+    // add it to the end of the insertion order
+    m->order[m->num_entries] = new_entry;
+
+    // increment the number of unique keys in the map
+    m->num_entries += 1;
+
+    return DT_OK;
+        
 }
 
 /*
@@ -205,7 +276,6 @@ dt_status dt_map_key_at(const dt_map *m, size_t index, const char **out)
 static dt_map_entry *find_entry(const dt_map *m, const char *key) {
     //init
     dt_map_entry *current;
-    dt_map_entry *next;
     
     // bucket = hash_key(key) % m->num_buckets
     size_t index = hash_key(key) % m->num_buckets;
@@ -218,16 +288,40 @@ static dt_map_entry *find_entry(const dt_map *m, const char *key) {
         
     };
     
-    if (current == NULL ){
-        return NULL;
-    };
     // return the entry or NULL
     if (strcmp(current->key, key) == 0) {
         return current;
     };
 
+    // current is NULL
+    return NULL;
 }
+/*
+static dt_map_entry *find_entry_order(dt_map *m, const char *key) {
+    
+    
+    //init
+    dt_map_entry *current;
+   
+    // walk the chain with dt_map_entry->next, compare with strcmp
+    current = m->order[0];
+    while (current != NULL && (strcmp(current->key, key) != 0)) {
+        //traverse through the linked list
+        current = current->next;
+        
+    };
+    
+    // return the entry or NULL
+    if (strcmp(current->key, key) == 0) {
+        return current;
+    };
 
+    // current is NULL
+    return NULL;
+    
+    return 0;
+}
+*/
 
 static unsigned long long hash_key(const char *key)
 {
