@@ -122,11 +122,12 @@ dt_status dt_str_append(dt_str *s, const char *bytes, size_t length)
        s holds "hello": dt_str_append(s, ", world", 7) -> DT_OK, len is now 12
        an allocation failure                           -> DT_ERR_CAPACITY, s unchanged
        cases/normal/string_building.case, cases/capacity/string_growth.case */
-    
-    if (s->length + length >= SIZE_MAX) return DT_ERR_CAPACITY;
+
+    // check for potential overflow when adding the new length and a null terminator
+    if (length > SIZE_MAX - 1 - s->length) return DT_ERR_CAPACITY;
     
     // if the current capacity is not enough, grow the buffer
-    if (s->length + length + 1 > s->capacity) {
+    if (length > s->capacity - 1 - s->length) {
         size_t new_capacity = s->capacity * 2;
         if (new_capacity < s->length + length + 1) {
             new_capacity = s->length + length + 1;
@@ -169,6 +170,7 @@ dt_status dt_str_substr(const dt_str *s, size_t start, size_t length, dt_str **o
 
     // create a new dt_str for the substring and return it through *out
     dt_str *substr = dt_str_new(s->bytes + start, length);
+    if (substr == NULL) return DT_ERR_CAPACITY;  // check for allocation failure
     *out = substr;
     return DT_OK;
 }

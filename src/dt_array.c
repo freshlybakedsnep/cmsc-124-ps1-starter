@@ -26,6 +26,9 @@ struct dt_array {
     long long lower_bound;
 };
 
+// helper method declaration
+static bool offset(const dt_array *a, long long index, size_t *out_offset);
+
 /*
  * dt_array_new builds an array of length nil elements.
  * The first index is lower_bound. A zero length creates a valid empty array.
@@ -44,13 +47,17 @@ dt_array *dt_array_new(size_t length, long long lower_bound)
        cases/normal/array_basics.case, cases/boundary/array_empty.case,
        cases/boundary/array_negative_lower_bound.case */
 
+    // check for invalid size or index range
+    if (length > SIZE_MAX / sizeof(dt_value)) return NULL;  
+
+    // check for unrepresentable final index
+    if (length > 0 && lower_bound > LLONG_MAX - (long long)length + 1) return NULL;
+
+    // allocate memory for the dt_array structure
     dt_array *new_array = malloc(sizeof(dt_array));
     if (new_array == NULL) return NULL;     // check for allocation failure
 
-    // assign set values to generated array struct
-    new_array->lower_bound = lower_bound;
-    new_array->length = length;
-
+    
     // allocate memory for the elements of the array
     new_array->elements = malloc(length * sizeof(dt_value));
     if (new_array->elements == NULL) {      // check for allocation failure
@@ -58,6 +65,10 @@ dt_array *dt_array_new(size_t length, long long lower_bound)
         return NULL;
     }
 
+    // initalize the fields of the dt_array structure
+    new_array->lower_bound = lower_bound;
+    new_array->length = length;
+    
     // initialize each element to dt_value_nil()
     for (size_t i = 0; i < length; i++) new_array->elements[i] = dt_value_nil();
     return new_array;
@@ -131,12 +142,10 @@ dt_status dt_array_get(const dt_array *a, long long index, dt_value *out)
        cases/boundary/array_index_below_lower.case,
        cases/boundary/array_full_range_index.case */
 
-    if (index < a->lower_bound) return DT_ERR_RANGE;
-    size_t offset = (size_t)index - (size_t)a->lower_bound;
-    if (offset >= a->length) return DT_ERR_RANGE;
-
-    *out = a->elements[offset];
-
+    size_t off;
+    if (!offset(a, index, &off)) return DT_ERR_RANGE;
+    // write the value at the calculated offset to *out
+    *out = a->elements[off];
     return DT_OK;
 }
 
@@ -154,10 +163,23 @@ dt_status dt_array_set(dt_array *a, long long index, dt_value v)
          dt_array_set(a,  2, dt_value_int(10))  -> DT_ERR_RANGE, nothing changes
        cases/normal/array_basics.case, cases/boundary/array_negative_lower_bound.case */
 
-    if (index < a->lower_bound) return DT_ERR_RANGE;
-    size_t offset = (size_t)index - (size_t)a->lower_bound;
-    if (offset >= a->length) return DT_ERR_RANGE;
-    
-    a->elements[offset] = v;
+    size_t off;
+    if (!offset(a, index, &off)) return DT_ERR_RANGE;
+    // write value to the element at the calculated offset
+    a->elements[off] = v;
     return DT_OK;
+}
+
+static bool offset(const dt_array *a, long long index, size_t *out_offset) {
+
+    // check if the index is below the lower bound
+    if (index < a->lower_bound) return false;
+
+    // calculate the distance and check if it exceeds the length
+    size_t distance = (size_t)index - (size_t)a->lower_bound;
+    if (distance >= a->length) return false;
+
+    // write the distance to the output parameter and return true
+    *out_offset = distance;
+    return true;
 }

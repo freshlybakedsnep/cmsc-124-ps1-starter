@@ -33,14 +33,10 @@ dt_status dt_int_add(long long a, long long b, long long *out)
        dt_int_add(2, 3, &out)          -> DT_OK, out = 5
        dt_int_add(LLONG_MAX, 1, &out)  -> DT_ERR_OVERFLOW, out untouched
        cases/normal/int_arithmetic.case, cases/boundary/int_overflow_add.case */
-    if (b > 0 && a > LLONG_MAX - b) {
-        return DT_ERR_OVERFLOW;
-    }
-
-    if (b < 0 && a < LLONG_MIN - b) {
-        return DT_ERR_OVERFLOW;
-    }
     
+    // check for overflow before performing the addition
+    if (b > 0 && a > LLONG_MAX - b) return DT_ERR_OVERFLOW; // positive overflow
+    if (b < 0 && a < LLONG_MIN - b) return DT_ERR_OVERFLOW; // negative overflow
     *out = a + b;
     return DT_OK;
 }
@@ -58,15 +54,9 @@ dt_status dt_int_sub(long long a, long long b, long long *out)
        dt_int_sub(LLONG_MIN + 1, 2, &out)      -> DT_ERR_OVERFLOW, out untouched
        cases/normal/int_arithmetic.case, cases/boundary/int_overflow_sub_min.case */
 
-
-    if (b < 0 && a > LLONG_MAX + b) {
-        return DT_ERR_OVERFLOW;
-    }
-
-    if (b > 0 && a < LLONG_MIN + b) {
-        return DT_ERR_OVERFLOW; 
-    }
-
+    //  check for overflow before performing the subtraction
+    if (b < 0 && a > LLONG_MAX + b) return DT_ERR_OVERFLOW; // positive overflow
+    if (b > 0 && a < LLONG_MIN + b) return DT_ERR_OVERFLOW; // negative overflow
     *out = a - b;
     return DT_OK;
     
@@ -96,11 +86,12 @@ dt_status dt_int_mul(long long a, long long b, long long *out)
     if (a == LLONG_MIN && b == -1) return DT_ERR_OVERFLOW;
     if (b == LLONG_MIN && a == -1) return DT_ERR_OVERFLOW;
     
-    if (a > 0){
+    // check for overflow before performing the multiplication
+    if (a > 0){ 
         // check for overflow when a is positive by comparing reversed division
-        if (b > 0 && a > LLONG_MAX / b) return DT_ERR_OVERFLOW;
-        if (b < 0 && b < LLONG_MIN / a) return DT_ERR_OVERFLOW;
-    } else {
+        if (b > 0 && a > LLONG_MAX / b) return DT_ERR_OVERFLOW; // positive overflow
+        if (b < 0 && b < LLONG_MIN / a) return DT_ERR_OVERFLOW; // negative overflow
+    } else { // a is negative, early edge case already excluded a = 0
         if (b > 0 && a < LLONG_MIN / b) return DT_ERR_OVERFLOW;
         if (b < 0 && a < LLONG_MAX / b) return DT_ERR_OVERFLOW;
     }
