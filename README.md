@@ -8,7 +8,7 @@ toolchains, and local verification details for the work that the manual defines.
 ## Pair
 
 - Gabrielle Sumergido (`@freshlybakedsnep`)
-- Full Name (`@github-username`)
+- Brent Michael Anzon Mendoza (`@TheJuanderer`)
 
 ## Files You May Change
 
