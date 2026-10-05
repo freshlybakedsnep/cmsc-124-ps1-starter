@@ -74,6 +74,9 @@ void dt_list_free(dt_list *l)
        freeing a's first cell  -> b still reaches the cells holding 2 and 3
        releasing the tail here causes the sanitizer to report a double release
        cases/cleanup/shared_list_tail.case */
+    
+    // skips if l is NULL, otherwise frees the cell
+    if (l == NULL) return;
     free(l);
 }
 
@@ -86,19 +89,14 @@ size_t dt_list_len(const dt_list *l)
        for a = (1 2 3):  dt_list_len(a) -> 3
        for the empty list: dt_list_len(NULL) -> 0
        cases/normal/list_basics.case */
-    size_t len = 0;
-    const dt_list *current;
-
-    if(l != NULL) {
-        current = l;
-        while (current != NULL) {
-            len += 1;
-            current = current->tail;
-
-        };
-        return len;
-    };
-    return 0;
+    
+    // initialize counter and increment per cell until reaching the end of the list
+    size_t count = 0;
+    while (l != NULL) {
+        count++;        // increment the count for each cell
+        l = l->tail;    // move to the next cell in the list
+    }
+    return count;
 }
 
 /*
@@ -132,11 +130,8 @@ dt_status dt_list_cdr(const dt_list *l, dt_list **out)
        for a = (1 2 3):     dt_list_cdr(a, &out)    -> DT_OK, *out references tail b
        for the empty list:  dt_list_cdr(NULL, &out) -> DT_ERR_EMPTY, *out untouched
        cases/normal/list_basics.case, cases/boundary/list_cdr_empty.case */
-    if (l == NULL) {
-        return DT_ERR_EMPTY;
-    };
-
-    *out = l->tail;
-    return DT_OK;
-
+    
+    if (l == NULL) return DT_ERR_EMPTY; // return error for empty list
+    *out = l->tail; // write the tail reference to *out
+    return DT_OK;   // return success
 }
