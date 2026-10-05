@@ -77,7 +77,7 @@ void dt_list_free(dt_list *l)
     
     // skips if l is NULL, otherwise frees the cell
     if (l == NULL) return;
-    free(l);
+    
 }
 
 /*
