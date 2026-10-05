@@ -7,5 +7,9 @@ You wrote the tag check in `dt_value_as_int` by hand. Some languages don't let y
 Q3. 
 Your `dt_map` keeps insertion order separately from the hash buckets, which is memory spent on something no lookup uses. Argue the other side: describe a design that drops it, say what breaks, and say whether you'd ship it.
 
+Lets say we dont have an array of insertion order in the hash map object. Basically we can still add, delete, and edit entries using the bucket array.
+
+However this time we cant use the dt_map_key_at function since we dont know how the keys were inserted in the first place as this was the purpose of the order array and since it is random (using the hash key) when adding map entries in the bucket. And since a hashmap needs to remember what insertions in order has taken place. 
+
 Q4. 
 Compare access after release with an allocation that remains unreleased at the driver's final check. What damage can each cause in a long-running server? How does that answer change for a command-line tool that exits in a second?
