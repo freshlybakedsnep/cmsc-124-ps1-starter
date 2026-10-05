@@ -173,7 +173,6 @@ dt_status dt_map_put(dt_map *m, const char *key, dt_value v)
     // key does not exist, create a new entry
     // check if we need to expand the order array
     if (m->num_entries == m->capacity) {
-        if (m->capacity >= SIZE_MAX / 2) return DT_ERR_CAPACITY;  // prevent overflow
         size_t new_capacity = m->capacity * 2;  // double the capacity
 
         struct dt_map_entry **new_order = realloc(m->order, new_capacity * sizeof(**new_order));
