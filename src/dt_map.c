@@ -73,26 +73,36 @@ dt_map *dt_map_new(void)
     /* TODO: Return an allocated empty map. Return NULL after an allocation failure.
        dt_map_new()  -> a map whose dt_map_len is 0
        cases/normal/map_basics.case */
-
-    dt_map *map = malloc(sizeof(dt_map));
-    if (map == NULL) return NULL;     // check for allocation failure
-
-    // initialize the fields of the new map
-    map->num_buckets = 16;  // initial number of buckets
-    map->num_entries = 0;   // initial number of entries
-    map->capacity = 16;     // initial capacity of the map
-
-    map->buckets = calloc(map->num_buckets, sizeof(*map->buckets));
-    map->order = malloc(map->capacity * sizeof(*map->order)); 
     
-    // check for allocation failure
-    if (map->buckets == NULL || map->order == NULL) {      
-        free(map->buckets);
-        free(map->order);
-        free(map);
+
+    // allocate the new map and each of the slots
+    dt_map  *new_map = malloc(sizeof(dt_map));
+    if ( new_map == NULL){
         return NULL;
-    }
-    return map;
+    };
+    new_map->buckets = malloc (10 * sizeof(dt_map_entry *));
+    if ( new_map->buckets == NULL){
+        free (new_map);
+        return NULL;
+    };
+
+    new_map->order = malloc (10 * sizeof(dt_map_entry *));
+    if ( new_map->order == NULL){
+        free (new_map);
+        return NULL;
+    };
+
+
+    // initialize the contents inside the bucket array in the map to null values
+    for (size_t i = 0; i < 10; i++) new_map->buckets[i] = NULL;
+    for (size_t i = 0; i < 10; i++) new_map->order[i] = NULL;
+
+    //initialize the other fields
+    new_map->num_buckets = 10; // number of slots 
+    new_map->num_entries = 0; // number of keys
+
+    new_map->capacity  = 10; // number of keys we can create, can be increased or not
+    return new_map;
 }
 
 /*
@@ -274,3 +284,7 @@ dt_status dt_map_key_at(const dt_map *m, size_t index, const char **out)
     *out = m->order[index]->key;  // write the key at the specified index to *out
     return DT_OK;
 }
+
+
+
+

@@ -55,15 +55,15 @@ dt_list *dt_list_cons(dt_value head, dt_list *tail)
        an allocation failure -> NULL
        cases/normal/list_basics.case, cases/cleanup/shared_list_tail.case */
     
-    // allocate memory 
-    dt_list *c = malloc(sizeof(dt_list));
-    if (c == NULL) return NULL;
+    dt_list *new_list = malloc(sizeof(dt_list));
+    if (new_list == NULL){
+        return NULL;
+    };
 
-    c->head = head;  // set the head value
-    c->tail = tail;  // set the tail reference
-    return c;        // return the new cell
-}
-
+    new_list->head = head;
+    new_list->tail = tail;
+    return new_list;
+}    
 /*
  * dt_list_free releases one cell and preserves its tail.
  * Another list can still reference the tail. The function accepts NULL.
@@ -110,12 +110,14 @@ dt_status dt_list_car(const dt_list *l, dt_value *out)
        Preserve *out after this error. A nil value is a valid cell value.
        for a = (1 2 3):     dt_list_car(a, &out)    -> DT_OK, *out is 1
        for the empty list:  dt_list_car(NULL, &out) -> DT_ERR_EMPTY, *out untouched
-       cases/normal/list_basics.case, cases/boundary/list_car_empty.case */
+       cases/normal/list_basics.case, cases/boundary/list_car_empty.case */ 
+    if (l == NULL) {
+        return DT_ERR_EMPTY;
+    };
 
-    if (l == NULL) return DT_ERR_EMPTY; // return error for empty list
-    *out = l->head; // write the head value to *out
-    return DT_OK;   // return success
-}
+    *out = l->head;
+    return DT_OK;
+  }
 
 /*
  * dt_list_cdr writes the tail to *out. It returns DT_ERR_EMPTY for an empty
