@@ -19,6 +19,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 typedef struct dt_map_entry dt_map_entry;
 static dt_map_entry *find_entry(const dt_map *m, const char *key);
