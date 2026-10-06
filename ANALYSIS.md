@@ -4,7 +4,7 @@
     Physical memory is specifically allocated for computation for non- 0- or 1-based indexing, thus additional overhead for subtraction is done to determine the location of the memory.
 
 `dt_tuple`'s duck typing: **Python**. 
-    Datatypes used in a tuple are determined only during runtime and requires extra memory to store not only the tuple's members but also its actual size per tuple, in comparison to compiled languages that allocates memory upon compilation and treats each tuple combination as different types upon compilation (thus, dont require additional memory to store the object's size).
+    Datatypes used in a tuple are determined only during runtime and requires extra memory to store not only the tuple's members but also its actual size per tuple, in comparison to compiled languages that allocates memory upon compilation and treats each tuple combination as different types upon compilation (thus, do not require additional memory to store the object's size).
 
 `dt_map`'s bucket and key-value pairs: **Python's dictionary**.
     A similar cause with python's tuples wherein runtime causes additional memory overhead - requiring every key-value pair to allocate extra memory for determining its type and size, in addition to ensuring `O(1)` lookups with its insertion order.
@@ -19,7 +19,7 @@ This would be worth wanting and making use of if you want precise memory managem
 ---
 ### Q3. Your `dt_map` keeps insertion order separately from the hash buckets, which is memory spent on something no lookup uses. Argue the other side: describe a design that drops it, say what breaks, and say whether you'd ship it.
 
-Lets say we dont have an array of insertion order in the hash map object. Basically we can still add, delete, and edit entries using the bucket array. `dt_map_put` would no longer need to grow the array. `dt_map_remove` would no longer do the n = n+1 shifting of the entries in the order array. It only allocates 1 array and the map itself. The trade off in this is you wont have an the order of the insertion of values
+Lets say we do not have an array of insertion order in the hash map object. Basically we can still add, delete, and edit entries using the bucket array. `dt_map_put` would no longer need to grow the array. `dt_map_remove` would no longer do the n = n+1 shifting of the entries in the order array. It only allocates 1 array and the map itself. The trade off in this is you wont have an the order of the insertion of values
 
 This would be the structure of the data type:
 ```
@@ -29,7 +29,7 @@ struct dt_map {
     size_t num_entries;
 };
 ```
-However this time we cant use the `dt_map_key_at` function since we dont know how the keys were inserted in the first place as this was the purpose of the order array and since the index it inserts is random (using the hash key) when adding map entries in the bucket. `dt_map_key_at` can no longer return keys by insertion position. Keys would only be reachable in bucket array, which depends on the hash and bucket count, not on when they were inserted. 
+However this time we cannot use the `dt_map_key_at` function since we do not know how the keys were inserted in the first place as this was the purpose of the order array and since the index it inserts is random (using the hash key) when adding map entries in the bucket. `dt_map_key_at` can no longer return keys by insertion position. Keys would only be reachable in bucket array, which depends on the hash and bucket count, not on when they were inserted. 
 
 Would I ship it? If the hashmap did not need to have its insertion be ordered, then i would ship it since the map would be simpler and use less memory than having the insertion order. There is also no need to allocate more memory if it reaches the current maximum capacity.
 
@@ -39,6 +39,8 @@ Would I ship it? If the hashmap did not need to have its insertion be ordered, t
 
 When accessing the same address you just freed, the memory may have been reused by something else. Reading it returns garbage or another object's data, and writing to it might cause some data being changed unintentionally. When this occurs in a long running server, then it might corrupt data being stored, it might change the behavior of programs, etc.
 
-An allocation that is unreleased makes it so that the memory that was created cant be reached anymore by pointers, so it just sits there taking up space. Now for a server that is running for a long time, this unreleased data may slowly take up more and more space until the server runs out of memory to use.
+An allocation that is unreleased makes it so that the memory that was created cannot be reached anymore by pointers, so it just sits there taking up space. In a server grow with every request or event that triggers them, the slow accumulation of unreleased memory can add up over time. Now for a server that is running for a long time, this unreleased data may slowly take up more and more space until the server runs out of memory to use.
 
-When in a command line tool that exits after a second, the OS reclaims all its memory that has no pointers to it for an allocation that remains unreleased. While an access after release still has the same problems when it is on a long-running server.
+When in a command line tool that exits after a second, the OS reclaims all its memory whether or not pointers to it still exist. For an allocation that remains unreleased and if the unreleased memory is low enough, it does not matter that much. While an access after release still has the same problems when it is on a long-running server. 
+
+So both scenarios can cause damage, but depending in how long it lives it can be harmless or very harmful.
